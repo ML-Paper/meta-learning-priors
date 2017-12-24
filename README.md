@@ -13,8 +13,7 @@
 
 * Stochsastic_Meta_Learning/main_Meta_Bayes.py             - Learns a prior from the obsereved (meta-training) tasks and use it to learn new (meta-test) tasks.
 * Toy_Examples/Toy_Main.py -  Toy example of 2D  estimation.
-* Single_Task/main_TwoTaskTransfer_PermuteLabels and  Single_Task/main_TwoTaskTransfer_PermutePixels.py -
-run alternative tranfer methods.
+* Single_Task/main_TwoTaskTransfer_PermuteLabels - runs alternative tranfer methods between two tasks.
 
 * Stochsastic_Meta_Learning/Analyze_Prior.py - Analysis of the weight uncertainty ine each layer of the learned prior (run after creating a prior with main_Meta_Bayes.py)
 
