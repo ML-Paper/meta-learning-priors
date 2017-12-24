@@ -1,5 +1,4 @@
-# Implementation of the Meta-PAC-Bayes algorithm in PyTorch
-
+# Implementation of the paper "Lifelong learning by adjusting priors"
 
 
 ## Prerequisites
