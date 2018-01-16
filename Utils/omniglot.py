@@ -90,7 +90,7 @@ def get_task(chars, root_path, n_labels, k_train_shot, final_input_trans=None, t
 
     # Sample n_labels classes:
     n_tot_chars = len(chars)
-    char_inds = np.random.choice(n_tot_chars, n_labels)
+    char_inds = np.random.choice(n_tot_chars, n_labels, replace=False)
     classes_names = [chars[ind] for ind in char_inds]
 
     train_samp = []
