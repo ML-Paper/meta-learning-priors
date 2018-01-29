@@ -1,4 +1,4 @@
-# Implementation of the Meta-PAC-Bayes algorithm in PyTorch
+# Implementation of the Meta-Learning-by-Adjusting-Priors algorithm in PyTorch
 
 
 
