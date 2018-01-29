@@ -4,15 +4,14 @@
 from __future__ import absolute_import, division, print_function
 
 from datetime import datetime
-import glob
 import os
-import shutil
 from torch.autograd import Variable
 import torch.nn as nn
 import torch
 import numpy as np
 import random
-
+import sys
+import pickle
 # -----------------------------------------------------------------------------------------------------------#
 # General - PyTorch
 # -----------------------------------------------------------------------------------------------------------#
@@ -58,35 +57,18 @@ def correct_rate(outputs, targets):
     return n_correct / outputs.size()[0]
 
 
-def save_models_dict(models_dict, dir_path):
+def save_model_state(model, f_path):
 
-    for name in models_dict:
-        save_model_state(models_dict[name], dir_path, name)
-
-def load_models_dict(models_dict, dir_path):
-    ''' Load models '''
-    for name in models_dict:
-        load_model_state(models_dict[name], dir_path, name)
-
-
-def save_model_state(model, dir_path, name):
-
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
-    f_path = os.path.join(dir_path, name + '.pt')
     with open(f_path, 'wb') as f_pointer:
         torch.save(model.state_dict(), f_pointer)
     return f_path
 
 
-def load_model_state(model, dir_path, name):
-
-    f_path = os.path.join(dir_path, name + '.pt')
+def load_model_state(model, f_path):
     if not os.path.exists(f_path):
-        return False
+        raise ValueError('No file found with the path: ' + f_path)
     with open(f_path, 'rb') as f_pointer:
         model.load_state_dict(torch.load(f_pointer))
-    return True
 
 #
 # def get_data_path():
@@ -100,6 +82,8 @@ def load_model_state(model, dir_path, name):
 #             pth = read_pth
 #     print('Data path: ', pth)
 #     return pth
+
+
 
 # -------------------------------------------------------------------------------------------
 #  Regularization
@@ -117,6 +101,7 @@ def net_norm(model, p=2):
         target = Variable(zeros_gpu(param.size()), requires_grad=False)  # dummy target
         total_norm += loss_crit(param, target)
     return total_norm
+
 
 
 # -----------------------------------------------------------------------------------------------------------#
@@ -187,17 +172,59 @@ def get_model_string(model):
 # Result saving
 # -----------------------------------------------------------------------------------------------------------#
 
-def write_result(str, log_file_name):
-
-    print(str)
-    if log_file_name:
-        with open(log_file_name + '.out', 'a') as f:
-            print(str, file=f)
-
-
-def gen_run_name(name_prefix):
+def create_result_dir(prm):
+    # If run_name empty, set according to time
     time_str = datetime.now().strftime(' %Y-%m-%d %H:%M:%S')
-    return name_prefix + time_str
+    if prm.run_name == '':
+        prm.run_name = time_str
+    prm.result_dir = os.path.join('saved', prm.run_name)
+    if not os.path.exists(prm.result_dir):
+        os.makedirs(prm.result_dir)
+    message = ['Log file created at ' + time_str,
+               'Run script: ' + sys.argv[0],
+               'Parameters:', str(prm), '-'*50]
+    write_to_log(message, prm, mode='w') # create new log file
+    # set the path to pre-trained model, in case it is loaded (if empty - set according to run_name)
+    if not hasattr(prm, 'load_model_path') or prm.load_model_path == '':
+        prm.load_model_path = os.path.join(prm.result_dir, 'model.pt')
+
+
+def write_to_log(message, prm, mode='a', update_file=True):
+    # mode='a' is append
+    # mode = 'w' is write new file
+    if not isinstance(message, list):
+        message = [message]
+    # update log file:
+    if update_file:
+        log_file_path = os.path.join(prm.result_dir, 'log') + '.out'
+        with open(log_file_path, mode) as f:
+            for string in message:
+                print(string, file=f)
+    # print to console:
+    for string in message:
+        print(string)
+
+def write_final_result(test_acc, run_time, prm, result_name='', verbose=1):
+    message = []
+    if verbose == 1:
+        message.append('Run finished at: ' + datetime.now().strftime(' %Y-%m-%d %H:%M:%S'))
+    message.append(result_name + ' Average Test Error: {:.3}%\t Runtime: {} [sec]'
+                     .format(100 * (1 - test_acc), run_time))
+    write_to_log(message, prm)
+
+
+def save_run_data(prm, info_dict):
+    run_data_file_path = os.path.join(prm.result_dir, 'run_data.pkl')
+    with open(run_data_file_path, 'wb') as f:
+        pickle.dump([prm, info_dict], f)
+
+
+def load_run_data(result_dir):
+    run_data_file_path = os.path.join(result_dir, 'run_data.pkl')
+    with open(run_data_file_path, 'rb') as f:
+       prm, info_dict = pickle.load(f)
+    return prm, info_dict
+
 
 # def save_code(setting_name, run_name):
 #     dir_name = setting_name + '_' + run_name
@@ -208,13 +235,5 @@ def gen_run_name(name_prefix):
 #         os.makedirs(dest_dir)
 #     for filename in glob.glob(os.path.join(source_dir, '*.*')):
 #         shutil.copy(filename, dest_dir)
-
-
-def write_final_result(test_acc,run_time, log_file_name, result_name='', verbose=1):
-    if verbose == 1:
-        write_result('Run finished at: ' + datetime.now().strftime(' %Y-%m-%d %H:%M:%S'), log_file_name)
-    write_result(result_name + ' Average Test Error: {:.3}%\t Runtime: {} [sec]'
-                     .format(100 * (1 - test_acc), run_time), log_file_name)
-
 
 

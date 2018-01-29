@@ -7,6 +7,9 @@ from Utils.common import load_run_data
 # Runs meta-training with the specified hyper-parameters
 # and meta-testing with a range of 'meta-test gradient steps'
 
+n_train_tasks = 10
+n_pixels_shuffles = 200
+
 alpha = 0.01
 n_meta_train_grad_steps = 2
 run_learning = True   # If false, just show results
@@ -16,7 +19,7 @@ max_test_grad_steps = 20
 n_meta_test_grad_steps_vec = list(range(min_test_grad_steps, 1+max_test_grad_steps))
 meta_train_in_this_run = 1  # we can meta-train just once and use the learned meta-parameters to meta-test with different number of gradient steps
 
-base_run_name = 'Labels_Alpha_{}_TrainGrads_{}'.format(alpha, n_meta_train_grad_steps)
+base_run_name = 'Shuffled_{}_Pixels_{}_Tasks_Alpha_{}_TrainGrads_{}'.format(n_pixels_shuffles, n_train_tasks, alpha, n_meta_train_grad_steps)
 base_run_name = base_run_name.replace('.','_')
 sub_runs_names = [base_run_name + '/' + 'TestGrads_' + str(n_meta_test_grad_steps) for n_meta_test_grad_steps in n_meta_test_grad_steps_vec]
 
@@ -38,9 +41,10 @@ if run_learning:
               '--mode', mode,
               '--load_model_path', root_saved_dir + base_run_name + '/' + 'TestGrads_' +  str(meta_train_in_this_run) + '/model.pt',
               '--data-source', 'MNIST',
-              '--n_train_tasks', '5',
-              '--data-transform', 'Permute_Labels',
-              '--model-name', 'ConvNet3',
+              '--n_train_tasks', str(n_train_tasks),
+              '--data-transform', 'Shuffled_Pixels',
+              '--n_pixels_shuffles', str(n_pixels_shuffles),
+              '--model-name', 'FcNet3',
               # MAML hyper-parameters:
               '--alpha', str(alpha),
               '--n_meta_train_grad_steps', str(n_meta_train_grad_steps),

@@ -30,21 +30,28 @@ def run_learning(data_loader, prm, verbose=1, initial_model=None):
     else:
         model = get_model(prm)
 
-
+    # Load initial weights:
     if initial_model:
         model.load_state_dict(initial_model.state_dict())
+
+    # Gather modules list:
+    modules_list = list(model.named_children())
+    if hasattr(model, 'net'):
+        # extract the modules from 'net' field:
+        modules_list += list(model.net.named_children())
+        modules_list = [m for m in modules_list if m[0] is not 'net']
 
     # Determine which parameters are optimized and which are frozen:
     if hasattr(prm, 'freeze_list'):
         freeze_list = prm.freeze_list
         optimized_modules = [named_module[1]
-                             for named_module in model.named_children()
+                             for named_module in modules_list
                              if not named_module[0] in freeze_list]
         optimized_params = sum([list(mo.parameters()) for mo in optimized_modules], [])
     elif hasattr(prm, 'not_freeze_list'):
         not_freeze_list = prm.not_freeze_list
         optimized_modules = [named_module[1]
-                             for named_module in model.named_children()
+                             for named_module in modules_list
                              if named_module[0] in not_freeze_list]
         optimized_params = sum([list(mo.parameters()) for mo in optimized_modules], [])
     else:
@@ -81,12 +88,10 @@ def run_learning(data_loader, prm, verbose=1, initial_model=None):
     # -----------------------------------------------------------------------------------------------------------#
     # Update Log file
     # -----------------------------------------------------------------------------------------------------------#
-    run_name = cmn.gen_run_name('Standard')
-    if verbose == 1:
-        cmn.write_result('-'*10+run_name+'-'*10, prm.log_file)
-        cmn.write_result(str(prm), prm.log_file)
-        cmn.write_result(cmn.get_model_string(model), prm.log_file)
-        cmn.write_result('Total number of steps: {}'.format(n_batches * prm.num_epochs), prm.log_file)
+    update_file = not verbose == 0
+    cmn.write_to_log(cmn.get_model_string(model), prm, update_file=update_file)
+    cmn.write_to_log('Total number of steps: {}'.format(n_batches * prm.num_epochs), prm, update_file=update_file)
+    cmn.write_to_log('Number of training samples: {}'.format(data_loader['n_train_samples']), prm, update_file=update_file)
 
     # -------------------------------------------------------------------------------------------
     #  Run epochs
@@ -101,7 +106,7 @@ def run_learning(data_loader, prm, verbose=1, initial_model=None):
     test_acc = run_test(model, test_loader, loss_criterion, prm)
 
     stop_time = timeit.default_timer()
-    cmn.write_final_result(test_acc, stop_time - start_time, prm.log_file, verbose=verbose, result_name='Standard')
+    cmn.write_final_result(test_acc, stop_time - start_time, prm, verbose=verbose, result_name='Standard')
 
     test_err = 1 - test_acc
     return test_err, model

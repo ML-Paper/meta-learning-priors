@@ -7,7 +7,9 @@ import torch.utils.data as data_utils
 from torch.autograd import Variable
 import multiprocessing, os
 import numpy as np
-import Utils.omniglot as omniglot
+from Utils import omniglot
+from Utils import imagenet_data
+
 import matplotlib.pyplot as plt
 
 # -------------------------------------------------------------------------------------------
@@ -27,6 +29,9 @@ class Task_Generator(object):
             # Later, tasks will be generated using this characters
             self.chars_splits = omniglot.split_chars(prm.data_path, prm.chars_split_type, prm.n_meta_train_chars)
 
+        elif self.data_source == 'SmallImageNet':
+            self.class_split = imagenet_data.split_classes(prm)
+
 
     def create_meta_batch(self, prm, n_tasks, meta_split='meta_train', limit_train_samples=None):
         ''' generate a meta-batch of tasks'''
@@ -41,6 +46,12 @@ class Task_Generator(object):
             # Create a fixed random pixels permutation, applied to all images
             final_input_trans = [create_pixel_permute_trans(prm)]
             target_trans = []
+
+        elif self.data_transform == 'Shuffled_Pixels':
+            # Create a fixed random pixels permutation, applied to all images
+            final_input_trans = [create_limited_pixel_permute_trans(prm)]
+            target_trans = []
+
 
         elif self.data_transform == 'Permute_Labels':
             # Create a fixed random label permutation, applied to all images
@@ -72,16 +83,31 @@ class Task_Generator(object):
             # train_dataset = create_sinusoid_data(task_param, n_samples=10)
             # test_dataset = create_sinusoid_data(task_param, n_samples=100)
 
+
+        elif self.data_source == 'SmallImageNet':
+            labels_in_split = self.class_split[meta_split]  # list of chars dirs  for current meta-split
+            if meta_split == 'meta_test':
+                k_train_shot = prm.K_Shot_MetaTest
+            else:
+                k_train_shot = prm.K_Shot_MetaTrain
+            train_dataset, test_dataset = imagenet_data.get_task(labels_in_split, prm.N_Way, k_train_shot, prm)
+
+
         elif self.data_source == 'Omniglot':
             chars = self.chars_splits[meta_split] #   list of chars dirs  for current meta-split
+            if meta_split == 'meta_test':
+                k_train_shot = prm.K_Shot_MetaTest
+            else:
+                k_train_shot = prm.K_Shot_MetaTrain
             train_dataset, test_dataset = omniglot.get_task(chars, prm.data_path,
-                n_labels=prm.N_Way, k_train_shot=prm.K_Shot,
+                n_labels=prm.N_Way, k_train_shot=k_train_shot,
                 final_input_trans=final_input_trans, target_transform=target_trans)
         else:
             raise ValueError('Invalid data_source')
 
+
         # Limit the training samples :
-        if limit_train_samples:
+        if limit_train_samples: # if not none/zero
             train_dataset = reduce_train_set(train_dataset, limit_train_samples)
 
         # Create data loaders:
@@ -177,6 +203,9 @@ def get_info(prm):
     elif prm.data_source == 'Omniglot':
         info = {'input_shape': (1, 28, 28), 'n_classes': prm.N_Way}
 
+    elif prm.data_source == 'SmallImageNet':
+        info = {'input_shape': (3, 84, 84), 'n_classes': prm.N_Way}
+
     else:
         raise ValueError('Invalid data_source')
 
@@ -216,6 +245,22 @@ def create_pixel_permute_trans(prm):
     transform_func = lambda x: permute_pixels(x, inds_permute)
     return transform_func
 
+def create_limited_pixel_permute_trans(prm):
+    info = get_info(prm)
+    input_shape = info['input_shape']
+    input_size = input_shape[0] * input_shape[1] * input_shape[2]
+    inds_permute = torch.LongTensor(np.arange(0, input_size))
+
+    for i_shuffle in range(prm.n_pixels_shuffles):
+        i1 = np.random.randint(0, input_size)
+        i2 = np.random.randint(0, input_size)
+        temp = inds_permute[i1]
+        inds_permute[i1] = inds_permute[i2]
+        inds_permute[i2] = temp
+
+    transform_func = lambda x: permute_pixels(x, inds_permute)
+    return transform_func
+
 def permute_pixels(x, inds_permute):
     ''' Permute pixels of a tensor image'''
     im_H = x.shape[1]
@@ -224,6 +269,11 @@ def permute_pixels(x, inds_permute):
     x = x.view(input_size)  # flatten image
     x = x[inds_permute]
     x = x.view(1, im_H, im_W)
+    # debug: show  image
+    # import matplotlib.pyplot as plt
+    # plt.imshow(x.numpy()[0])
+    # plt.show()
+
     return x
 
 def create_label_permute_trans(prm):

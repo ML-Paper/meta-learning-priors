@@ -15,7 +15,7 @@ import torch
 from torch.autograd import Variable
 from Models.deterministic_models import get_model
 from Utils import common as cmn, data_gen
-from Utils.common import grad_step, net_norm, correct_rate, get_loss_criterion, write_result, count_correct
+from Utils.common import grad_step, net_norm, correct_rate, get_loss_criterion, write_to_log, count_correct
 
 def meta_step(prm, model, mb_data_loaders, mb_iterators, loss_criterion):
 
@@ -57,8 +57,14 @@ def meta_step(prm, model, mb_data_loaders, mb_iterators, loss_criterion):
         # end grad steps loop
 
         # Sample new  (validation) data batch for this task:
-        batch_data = data_gen.get_next_batch_cyclic(mb_iterators[i_task],
-                                                    mb_data_loaders[i_task]['train'])
+        if hasattr(prm, 'MAML_Use_Test_Data') and prm.MAML_Use_Test_Data:
+            batch_data = data_gen.get_next_batch_cyclic(mb_iterators[i_task],
+                                                        mb_data_loaders[i_task]['test'])
+        else:
+            batch_data = data_gen.get_next_batch_cyclic(mb_iterators[i_task],
+                                                     mb_data_loaders[i_task]['train'])
+
+
         inputs, targets = data_gen.get_batch_vars(batch_data, prm)
         outputs = model(inputs, fast_weights)
         total_objective += loss_criterion(outputs, targets)

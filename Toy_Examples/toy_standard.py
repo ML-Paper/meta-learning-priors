@@ -34,7 +34,7 @@ def learn(data_set):
         # Sample data batch:
         b_task = np.random.randint(0, n_tasks)  # sample a random task index
         batch_size_curr = min(n_samples_list[b_task], batch_size)
-        batch_inds = np.random.choice(n_samples_list[b_task], batch_size_curr)
+        batch_inds = np.random.choice(n_samples_list[b_task], batch_size_curr, replace=False)
         task_data = torch.from_numpy(data_set[b_task][batch_inds])
         task_data = Variable(task_data.cuda(), requires_grad=False)
 

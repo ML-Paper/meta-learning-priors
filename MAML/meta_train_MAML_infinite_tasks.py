@@ -9,7 +9,7 @@ import timeit
 
 from Models.deterministic_models import get_model
 from Utils import common as cmn, data_gen
-from Utils.common import grad_step, get_loss_criterion, write_result
+from Utils.common import grad_step, get_loss_criterion, write_to_log
 from MAML.MAML_meta_step import meta_step
 # -------------------------------------------------------------------------------------------
 #  Learning function
@@ -71,11 +71,8 @@ def run_meta_learning(prm, task_generator):
     # -----------------------------------------------------------------------------------------------------------#
 
     # Update Log file
-    run_name = cmn.gen_run_name('Meta-Training')
-    write_result('-'*10 + run_name + '-'*10, prm.log_file)
-    write_result(str(prm), prm.log_file)
-    write_result(cmn.get_model_string(model), prm.log_file)
-    write_result('---- Meta-Training with infinite tasks...', prm.log_file)
+    write_to_log(cmn.get_model_string(model), prm)
+    write_to_log('---- Meta-Training with infinite tasks...', prm)
 
     # -------------------------------------------------------------------------------------------
     #  Run epochs
@@ -89,7 +86,7 @@ def run_meta_learning(prm, task_generator):
     stop_time = timeit.default_timer()
 
     # Update Log file:
-    cmn.write_final_result(0.0, stop_time - start_time, prm.log_file)
+    cmn.write_final_result(0.0, stop_time - start_time, prm)
 
     # Return learned meta-parameters:
     return model

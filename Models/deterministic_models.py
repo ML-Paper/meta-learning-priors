@@ -1,9 +1,7 @@
 #
 # the code is inspired by: https://github.com/katerakelly/pytorch-maml
 
-import numpy as np
-import random
-import math
+from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 
 import torch
@@ -11,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from Utils import data_gen
-
+from Models.layer_inits import init_layers
 # -------------------------------------------------------------------------------------------
 # Main function
 # -------------------------------------------------------------------------------------------
@@ -68,26 +66,8 @@ class base_model(nn.Module):
         return self.forward(x, weights) # forward is defined in derived classes
 
     def _init_weights(self):
-        ''' Set weights to Gaussian, biases to zero '''
+        init_layers(self)
 
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-                if m.bias is not None:
-                    m.bias.data.zero_()
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-            elif isinstance(m, nn.Linear):
-                # Similar to PyTorch' default initializer
-                n = m.weight.size(1)
-                stdv = 1. / math.sqrt(n)
-                m.weight.data.uniform_(-stdv, stdv)
-                # m.weight.data.normal_(0, 0.01)
-                if m.bias is not None:
-                    m.bias.data.uniform_(1-stdv, 1+stdv)
-                    # m.bias.data = torch.ones(m.bias.data.size())
 
     def copy_weights(self, net):
         ''' Set this module's weights to be the same as those of 'net' '''
@@ -201,7 +181,7 @@ class ConvNet3(base_model):
 
 
 # -------------------------------------------------------------------------------------------
-#  OmConvNet -  ConvNet for Omniglot
+#  OmConvNet
 # -------------------------------------------------------------------------------- -----------
 class OmConvNet(base_model):
     def __init__(self, input_shape, n_classes):
@@ -211,7 +191,6 @@ class OmConvNet(base_model):
         n_filt1 = 64
         n_filt2 = 64
         n_filt3 = 64
-        n_hidden_fc1 = 50
         self.conv_layers = nn.Sequential(OrderedDict([
                 ('conv1',  nn.Conv2d(n_in_channels, n_filt1, kernel_size=3)),
                 ('bn1', nn.BatchNorm2d(n_filt1, momentum=1, affine=True)),
@@ -259,4 +238,4 @@ class OmConvNet(base_model):
         else:
             x = F.linear(x, weights['fc_out.weight'], weights['fc_out.bias'])
         return x
-
+# -------------------------------------------------------------------------------------------

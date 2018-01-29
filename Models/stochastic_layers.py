@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from Utils.common import randn_gpu
+from Models.stochastic_inits import init_stochastic_conv2d, init_stochastic_linear
 
 # -------------------------------------------------------------------------------------------
 #  Stochastic linear layer
@@ -13,21 +13,15 @@ class StochasticLayer(nn.Module):
     # base class of stochastic layers with re-parametrization
     # self.init  and self.operation should be filled by derived classes
 
-    def init_stochastic_layer(self, weights_size, bias_size, prm):
-
-        inits = prm.bayes_inits
-        mu_bias = inits['Bayes-Mu']['bias']
-        mu_std = inits['Bayes-Mu']['std']
-        log_var_bias = inits['Bayes-log-var']['bias']
-        log_var_std = inits['Bayes-log-var']['std']
-
-        self.w_mu = get_randn_param(weights_size, mu_bias, mu_std)
-        self.w_log_var = get_randn_param(weights_size, log_var_bias, log_var_std)
+    def create_stochastic_layer(self, weights_size, bias_size, prm):
+        # create the layer parameters
+        # values initialization is done later
+        self.w_mu = get_param(weights_size)
+        self.w_log_var = get_param(weights_size)
         self.w = {'mean': self.w_mu, 'log_var': self.w_log_var}
-
         if bias_size is not None:
-            self.b_mu = get_randn_param(bias_size, mu_bias, mu_std)
-            self.b_log_var = get_randn_param(bias_size, log_var_bias, log_var_std)
+            self.b_mu = get_param(bias_size)
+            self.b_log_var = get_param(bias_size)
             self.b = {'mean': self.b_mu, 'log_var': self.b_log_var}
 
 
@@ -87,7 +81,8 @@ class StochasticLinear(StochasticLayer):
             bias_size = out_dim
         else:
             bias_size = None
-        self.init_stochastic_layer(weights_size, bias_size, prm)
+        self.create_stochastic_layer(weights_size, bias_size, prm)
+        init_stochastic_linear(self, prm.log_var_init)
         self.eps_std = 1.0
 
 
@@ -119,7 +114,8 @@ class StochasticConv2d(StochasticLayer):
             bias_size = (out_channels)
         else:
             bias_size = None
-        self.init_stochastic_layer(weights_size, bias_size, prm)
+        self.create_stochastic_layer(weights_size, bias_size, prm)
+        init_stochastic_conv2d(self, prm.log_var_init)
         self.eps_std = 1.0
 
 
@@ -147,3 +143,9 @@ def get_randn_param(shape, mean, std):
     if isinstance(shape, int):
         shape = (shape,)
     return nn.Parameter(torch.FloatTensor(*shape).normal_(mean, std))
+
+
+def get_param(shape):
+    if isinstance(shape, int):
+        shape = (shape,)
+    return nn.Parameter(torch.FloatTensor(*shape))

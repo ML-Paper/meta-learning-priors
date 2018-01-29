@@ -103,6 +103,8 @@ def get_task(chars, root_path, n_labels, k_train_shot, final_input_trans=None, t
         class_dir = classes_names[i_label]
         # First get all instances of that class
         all_class_samples = [os.path.join(class_dir, x) for x in os.listdir(os.path.join(data_dir, class_dir))]
+        if not k_train_shot:
+            k_train_shot = len(all_class_samples)
         # Sample k_train_shot instances randomly each for train
         random.shuffle(all_class_samples)
         cls_train_samp = all_class_samples[:k_train_shot]
@@ -127,6 +129,7 @@ def get_task(chars, root_path, n_labels, k_train_shot, final_input_trans=None, t
 # -------------------------------------------------------------------------------------------
 class omniglot_dataset(data.Dataset):
     def __init__(self, data_dir, samples_paths, targets, final_input_trans=None, target_transform=None):
+        super(omniglot_dataset, self).__init__()
         self.all_items = list(zip(samples_paths, targets))
         self.final_input_trans = final_input_trans
         self.target_transform = target_transform
