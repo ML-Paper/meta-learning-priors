@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 
-from Stochsastic_Meta_Learning import meta_test_Bayes, meta_train_Bayes_finite_tasks, meta_train_Bayes_infinite_tasks
+from PriorMetaLearning import meta_test_Bayes, meta_train_Bayes_finite_tasks, meta_train_Bayes_infinite_tasks
 from Data_Path import get_data_path
 from Models import stochastic_models, deterministic_models
 from Single_Task import learn_single_standard
