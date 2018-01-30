@@ -7,12 +7,12 @@ import numpy as np
 import torch
 import torch.optim as optim
 
-from Stochsastic_Meta_Learning import meta_test_Bayes, meta_train_Bayes_finite_tasks, meta_train_Bayes_infinite_tasks
+from PriorMetaLearning import meta_test_Bayes, meta_train_Bayes_finite_tasks, meta_train_Bayes_infinite_tasks
 from Data_Path import get_data_path
 from Models.stochastic_models import get_model
 from Utils.data_gen import Task_Generator
 from Utils.common import save_model_state, load_model_state, create_result_dir, set_random_seed, write_to_log, save_run_data
-from Stochsastic_Meta_Learning.Analyze_Prior import run_prior_analysis
+from PriorMetaLearning.Analyze_Prior import run_prior_analysis
 
 torch.backends.cudnn.benchmark = True  # For speed improvement with models with fixed-length inputs
 # -------------------------------------------------------------------------------------------
