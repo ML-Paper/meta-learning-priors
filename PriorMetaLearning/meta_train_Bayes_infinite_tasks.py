@@ -6,7 +6,7 @@ from Models.stochastic_models import get_model
 from Utils import common as cmn
 from Utils.Bayes_utils import  run_test_Bayes
 from Utils.common import grad_step, get_loss_criterion, write_to_log
-from Stochsastic_Meta_Learning.Get_Objective_MPB import get_objective
+from PriorMetaLearning.Get_Objective_MPB import get_objective
 
 # -------------------------------------------------------------------------------------------
 #  Learning function
