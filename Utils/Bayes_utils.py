@@ -130,6 +130,10 @@ def get_meta_complexity_term(hyper_kl, prm, n_train_tasks):
 
         elif prm.complexity_type == 'Variational_Bayes':
             meta_complex_term = hyper_kl
+            
+        elif prm.complexity_type == 'NoComplexity':
+            meta_complex_term = 0.0
+
 
         else:
             raise ValueError('Invalid complexity_type')
